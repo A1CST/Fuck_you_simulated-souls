@@ -1,0 +1,87 @@
+{
+  "experiment": "optimizer_comparison",
+  "timestamp": "20260106_154249",
+  "total_time_sec": 151.3,
+  "config": {
+    "hidden_size": 32,
+    "input_size": 10000,
+    "num_fonts": 1,
+    "patience": 300
+  },
+  "results": [
+    {
+      "optimizer": "Adam",
+      "final_accuracy": 5.769230769230769,
+      "final_loss": 7.043693733215332,
+      "best_accuracy": 6.54,
+      "best_epoch": 20,
+      "total_epochs": 320,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 6.54% @ epoch 20)",
+      "time_sec": 25.6,
+      "json_path": "optimizer_comparison_20260106_154249\\log_Adam_20260106_154352.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_Adam_20260106_154352.pt"
+    },
+    {
+      "optimizer": "AdamW",
+      "final_accuracy": 5.769230769230769,
+      "final_loss": 7.035110928462102,
+      "best_accuracy": 5.77,
+      "best_epoch": 6,
+      "total_epochs": 306,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 6)",
+      "time_sec": 26.7,
+      "json_path": "optimizer_comparison_20260106_154249\\log_AdamW_20260106_154419.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_AdamW_20260106_154419.pt"
+    },
+    {
+      "optimizer": "Adagrad",
+      "final_accuracy": 1.9230769230769231,
+      "final_loss": 4.679898775540865,
+      "best_accuracy": 5.77,
+      "best_epoch": 8,
+      "total_epochs": 308,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 8)",
+      "time_sec": 20.1,
+      "json_path": "optimizer_comparison_20260106_154249\\log_Adagrad_20260106_154459.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_Adagrad_20260106_154459.pt"
+    },
+    {
+      "optimizer": "Adadelta",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 6.64727432177617,
+      "best_accuracy": 5.77,
+      "best_epoch": 1,
+      "total_epochs": 301,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 1)",
+      "time_sec": 25.9,
+      "json_path": "optimizer_comparison_20260106_154249\\log_Adadelta_20260106_154525.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_Adadelta_20260106_154525.pt"
+    },
+    {
+      "optimizer": "RMSprop",
+      "final_accuracy": 3.8461538461538463,
+      "final_loss": 15.319338593116173,
+      "best_accuracy": 5.0,
+      "best_epoch": 4,
+      "total_epochs": 304,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.00% @ epoch 4)",
+      "time_sec": 20.4,
+      "json_path": "optimizer_comparison_20260106_154249\\log_RMSprop_20260106_154439.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_RMSprop_20260106_154439.pt"
+    },
+    {
+      "optimizer": "SGD",
+      "final_accuracy": 4.615384615384616,
+      "final_loss": 5.59076483799861,
+      "best_accuracy": 4.62,
+      "best_epoch": 152,
+      "total_epochs": 452,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 4.62% @ epoch 152)",
+      "time_sec": 31.5,
+      "json_path": "optimizer_comparison_20260106_154249\\log_SGD_20260106_154326.json",
+      "model_path": "optimizer_comparison_20260106_154249\\model_SGD_20260106_154326.pt"
+    }
+  ],
+  "winner": "Adam",
+  "random_baseline": 3.85
+}
