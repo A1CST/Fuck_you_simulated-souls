@@ -5,7 +5,7 @@ A comprehensive test of gradient-based optimization on a simple letter classific
 
 ## The Challenge
 
-Classify letters A-Z from 100x100 pixel images using a small neural network.
+Classify letters A-Z from 100x100 pixel images using a small neural network with only 1 font! While my models are continuing to train past 50% now with the SAME configuration, wow thats crazy.
 
 ```
 Architecture: 10,000 inputs → 32 hidden → 26 outputs
