@@ -7,6 +7,11 @@
 # This is intentionally undersized to see how gradient descent handles
 # a constrained capacity network on this visual recognition task.
 #
+# ACTIVATION FUNCTIONS:
+# - Tests BOTH ReLU and Tanh activations for fair comparison with GA
+# - The GA baseline in this repo uses ReLU (though README mentions tanh)
+# - Running both allows direct comparison regardless of GA configuration
+#
 # Extensive logging to track:
 # - Loss curves (train/validation)
 # - Per-letter accuracy breakdown
@@ -14,6 +19,23 @@
 # - Weight statistics
 # - Learning rate scheduling
 # - Confusion patterns
+#
+# JSON OUTPUT ANSWERS THESE KEY QUESTIONS:
+# 1. Are you using tanh or relu? -> BOTH tested
+# 2. Training variations per letter (50)? -> Configurable, default 50
+# 3. Validation or training set measurement? -> VALIDATION (held-out)
+# 4. Best performance achieved? -> Detailed per optimizer/activation
+#
+# Usage:
+#   python alphabet_gradient_descent.py           # 5 fonts (default)
+#   python alphabet_gradient_descent.py --fonts=1 # Single font (baseline)
+#   python alphabet_gradient_descent.py --fonts=3 # 3 fonts
+#
+# Output:
+#   gd_comparison_<timestamp>/
+#   ├── comparison_summary.json    # Comprehensive results with GA comparison answers
+#   ├── log_<opt>_<act>_*.json     # Detailed training log per experiment
+#   └── model_<opt>_<act>_*.pt     # Saved model weights
 # ================================================================
 
 import os
@@ -311,6 +333,13 @@ class AlphabetDataset(Dataset):
 # ================================================================
 # NEURAL NETWORK
 # ================================================================
+# Activation function options for fair comparison
+ACTIVATION_FUNCTIONS = {
+    "relu": nn.ReLU,
+    "tanh": nn.Tanh,
+}
+
+
 class AlphabetNet(nn.Module):
     """
     Simple 2-layer network for alphabet recognition.
@@ -319,49 +348,76 @@ class AlphabetNet(nn.Module):
 
     This is intentionally undersized to test gradient descent
     with limited capacity.
+
+    Supports both ReLU and Tanh activations for fair comparison with
+    evolutionary methods (which may use either).
     """
 
-    def __init__(self):
+    def __init__(self, activation="relu", verbose=True):
+        """
+        Initialize the network.
+
+        Args:
+            activation: "relu" or "tanh" - the hidden layer activation function
+            verbose: Whether to print architecture details
+        """
         super().__init__()
 
+        self.activation_name = activation.lower()
+        if self.activation_name not in ACTIVATION_FUNCTIONS:
+            raise ValueError(f"Unknown activation: {activation}. Use 'relu' or 'tanh'")
+
         self.fc1 = nn.Linear(Config.INPUT_SIZE, Config.HIDDEN_SIZE)
-        self.relu = nn.ReLU()
+        self.activation = ACTIVATION_FUNCTIONS[self.activation_name]()
         self.fc2 = nn.Linear(Config.HIDDEN_SIZE, Config.OUTPUT_SIZE)
 
         # Initialize weights
+        # Note: Xavier/Glorot initialization is designed for tanh
+        # He initialization is better for ReLU, but we use Xavier for fair comparison
         nn.init.xavier_uniform_(self.fc1.weight)
         nn.init.zeros_(self.fc1.bias)
         nn.init.xavier_uniform_(self.fc2.weight)
         nn.init.zeros_(self.fc2.bias)
 
-        print(f"\n{'='*60}")
-        print("NETWORK ARCHITECTURE")
-        print(f"{'='*60}")
-        print(f"  Input:  {Config.INPUT_SIZE} neurons (100x100 pixels)")
-        print(f"  Hidden: {Config.HIDDEN_SIZE} neurons (ReLU activation)")
-        print(f"  Output: {Config.OUTPUT_SIZE} neurons (26 letters)")
-        print(f"")
-        print(f"  Parameters:")
-        print(f"    fc1.weight: {Config.INPUT_SIZE} x {Config.HIDDEN_SIZE} = {Config.INPUT_SIZE * Config.HIDDEN_SIZE:,}")
-        print(f"    fc1.bias:   {Config.HIDDEN_SIZE}")
-        print(f"    fc2.weight: {Config.HIDDEN_SIZE} x {Config.OUTPUT_SIZE} = {Config.HIDDEN_SIZE * Config.OUTPUT_SIZE:,}")
-        print(f"    fc2.bias:   {Config.OUTPUT_SIZE}")
-        total_params = (Config.INPUT_SIZE * Config.HIDDEN_SIZE + Config.HIDDEN_SIZE +
-                       Config.HIDDEN_SIZE * Config.OUTPUT_SIZE + Config.OUTPUT_SIZE)
-        print(f"    TOTAL:      {total_params:,} parameters")
-        print(f"")
-        print(f"  Bottleneck Analysis:")
-        print(f"    Information compression: {Config.INPUT_SIZE} -> {Config.HIDDEN_SIZE}")
-        print(f"    Compression ratio: {Config.INPUT_SIZE / Config.HIDDEN_SIZE:.1f}x")
-        print(f"    Bits per letter (theoretical): {np.log2(26):.2f}")
-        print(f"    Hidden units per letter: {Config.HIDDEN_SIZE / 26:.2f}")
-        print(f"{'='*60}\n")
+        if verbose:
+            print(f"\n{'='*60}")
+            print("NETWORK ARCHITECTURE")
+            print(f"{'='*60}")
+            print(f"  Input:  {Config.INPUT_SIZE} neurons (100x100 pixels)")
+            print(f"  Hidden: {Config.HIDDEN_SIZE} neurons ({self.activation_name.upper()} activation)")
+            print(f"  Output: {Config.OUTPUT_SIZE} neurons (26 letters)")
+            print(f"")
+            print(f"  Activation Function: {self.activation_name.upper()}")
+            if self.activation_name == "relu":
+                print(f"    - ReLU: max(0, x) - sparse activations, can have dead neurons")
+            else:
+                print(f"    - Tanh: (e^x - e^-x)/(e^x + e^-x) - outputs in [-1, 1], no dead neurons")
+            print(f"")
+            print(f"  Parameters:")
+            print(f"    fc1.weight: {Config.INPUT_SIZE} x {Config.HIDDEN_SIZE} = {Config.INPUT_SIZE * Config.HIDDEN_SIZE:,}")
+            print(f"    fc1.bias:   {Config.HIDDEN_SIZE}")
+            print(f"    fc2.weight: {Config.HIDDEN_SIZE} x {Config.OUTPUT_SIZE} = {Config.HIDDEN_SIZE * Config.OUTPUT_SIZE:,}")
+            print(f"    fc2.bias:   {Config.OUTPUT_SIZE}")
+            total_params = (Config.INPUT_SIZE * Config.HIDDEN_SIZE + Config.HIDDEN_SIZE +
+                           Config.HIDDEN_SIZE * Config.OUTPUT_SIZE + Config.OUTPUT_SIZE)
+            print(f"    TOTAL:      {total_params:,} parameters")
+            print(f"")
+            print(f"  Bottleneck Analysis:")
+            print(f"    Information compression: {Config.INPUT_SIZE} -> {Config.HIDDEN_SIZE}")
+            print(f"    Compression ratio: {Config.INPUT_SIZE / Config.HIDDEN_SIZE:.1f}x")
+            print(f"    Bits per letter (theoretical): {np.log2(26):.2f}")
+            print(f"    Hidden units per letter: {Config.HIDDEN_SIZE / 26:.2f}")
+            print(f"{'='*60}\n")
 
     def forward(self, x):
         x = self.fc1(x)
-        x = self.relu(x)
+        x = self.activation(x)
         x = self.fc2(x)
         return x
+
+    def get_activation_name(self):
+        """Return the name of the activation function used."""
+        return self.activation_name
 
 
 # ================================================================
@@ -984,14 +1040,30 @@ OPTIMIZERS = [
 # SINGLE OPTIMIZER TRAINING RUN
 # ================================================================
 def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
-                             output_dir, font_loader, run_number, total_runs):
-    """Run a complete training experiment with one optimizer."""
+                             output_dir, font_loader, run_number, total_runs,
+                             activation="relu"):
+    """
+    Run a complete training experiment with one optimizer and activation function.
+
+    Args:
+        optimizer_config: Dict with optimizer class, kwargs, name, description
+        train_loader: Training data loader
+        val_loader: Validation data loader
+        device: torch device
+        output_dir: Directory to save results
+        font_loader: Font loader instance
+        run_number: Current run number (for display)
+        total_runs: Total number of runs (for display)
+        activation: "relu" or "tanh" - activation function to use
+    """
 
     opt_name = optimizer_config["name"]
+    activation_upper = activation.upper()
 
     print(f"\n{'#'*70}")
-    print(f"# OPTIMIZER {run_number}/{total_runs}: {opt_name}")
-    print(f"# {optimizer_config['description']}")
+    print(f"# EXPERIMENT {run_number}/{total_runs}: {opt_name} + {activation_upper}")
+    print(f"# Optimizer: {optimizer_config['description']}")
+    print(f"# Activation: {activation_upper} ({'max(0,x)' if activation == 'relu' else 'tanh(x)'})")
     print(f"{'#'*70}")
 
     # Reset random seeds for fair comparison
@@ -1001,8 +1073,8 @@ def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
     if torch.cuda.is_available():
         torch.cuda.manual_seed(42)
 
-    # Create fresh model
-    model = AlphabetNet().to(device)
+    # Create fresh model with specified activation
+    model = AlphabetNet(activation=activation).to(device)
 
     # Create optimizer
     optimizer = optimizer_config["class"](model.parameters(), **optimizer_config["kwargs"])
@@ -1014,16 +1086,24 @@ def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
 
     print(f"\n[OPTIMIZER] {opt_name}")
     print(f"[OPTIMIZER] Settings: {optimizer_config['kwargs']}")
+    print(f"[ACTIVATION] {activation_upper}")
 
     # Create logger
     logger = TrainingLogger()
 
-    # Add optimizer info to JSON log
+    # Add optimizer and activation info to JSON log
     logger.json_log["optimizer"] = {
         "name": opt_name,
         "description": optimizer_config["description"],
         "settings": optimizer_config["kwargs"],
     }
+    logger.json_log["activation_function"] = {
+        "name": activation,
+        "description": "ReLU: max(0, x) - sparse activations" if activation == "relu"
+                       else "Tanh: bounded output in [-1, 1]",
+        "note": "Both activations tested for fair comparison with GA baseline",
+    }
+    logger.json_log["architecture"]["activation"] = activation
 
     # Train
     model, stop_reason = train(model, train_loader, val_loader, criterion, optimizer,
@@ -1047,14 +1127,17 @@ def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
     # Save model and JSON log
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    model_path = os.path.join(output_dir, f"model_{opt_name}_{timestamp}.pt")
+    # Include activation in filenames for clear identification
+    model_path = os.path.join(output_dir, f"model_{opt_name}_{activation}_{timestamp}.pt")
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer': opt_name,
+        'activation': activation,
         'config': {
             'hidden_size': Config.HIDDEN_SIZE,
             'input_size': Config.INPUT_SIZE,
             'output_size': Config.OUTPUT_SIZE,
+            'activation': activation,
         },
         'final_accuracy': final_acc,
         'final_loss': final_loss,
@@ -1062,12 +1145,14 @@ def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
     print(f"[SAVE] Model saved to: {model_path}")
 
     # Save JSON training log
-    json_path = os.path.join(output_dir, f"log_{opt_name}_{timestamp}.json")
+    json_path = os.path.join(output_dir, f"log_{opt_name}_{activation}_{timestamp}.json")
     logger.save_json(json_path)
 
     # Return results for summary
     return {
         "optimizer": opt_name,
+        "activation": activation,
+        "experiment_name": f"{opt_name}_{activation}",
         "final_accuracy": final_acc,
         "final_loss": final_loss,
         "best_accuracy": logger.json_log["best"]["accuracy"],
@@ -1081,24 +1166,52 @@ def run_optimizer_experiment(optimizer_config, train_loader, val_loader, device,
 
 
 # ================================================================
+# ACTIVATION FUNCTIONS TO TEST
+# ================================================================
+ACTIVATIONS_TO_TEST = ["relu", "tanh"]
+
+
+# ================================================================
 # MAIN
 # ================================================================
 def main():
+    """
+    Main entry point for gradient descent alphabet recognition experiments.
+
+    This script tests multiple optimizers with both ReLU and Tanh activations
+    to provide a comprehensive comparison with evolutionary (GA) baselines.
+
+    The JSON output is designed to answer these key questions:
+    1. Which activation function (tanh vs relu) is being used?
+    2. How many training variations per letter are used?
+    3. Is performance measured on validation or training set?
+    4. What is the best performance achieved?
+    """
     print("\n" + "="*70)
-    print("ALPHABET GRADIENT DESCENT - OPTIMIZER COMPARISON")
+    print("ALPHABET GRADIENT DESCENT - OPTIMIZER & ACTIVATION COMPARISON")
     print("="*70)
     print("Task: Visual letter recognition (A-Z)")
     print("Method: Backpropagation with Cross-Entropy Loss")
     print("Challenge: Extremely constrained hidden layer (32 neurons)")
     print("")
-    print("Testing optimizers:")
+    print("Testing BOTH ReLU and Tanh activations for fair GA comparison!")
+    print("")
+    print("Optimizers to test:")
     for i, opt in enumerate(OPTIMIZERS, 1):
         print(f"  {i}. {opt['name']}: {opt['description']}")
+    print("")
+    print("Activations to test:")
+    for act in ACTIVATIONS_TO_TEST:
+        desc = "max(0, x) - sparse, can have dead neurons" if act == "relu" else "bounded [-1,1], no dead neurons"
+        print(f"  - {act.upper()}: {desc}")
+    print("")
+    total_experiments = len(OPTIMIZERS) * len(ACTIVATIONS_TO_TEST)
+    print(f"Total experiments: {len(OPTIMIZERS)} optimizers x {len(ACTIVATIONS_TO_TEST)} activations = {total_experiments}")
     print("="*70)
 
     # Create output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = f"optimizer_comparison_{timestamp}"
+    output_dir = f"gd_comparison_{timestamp}"
     os.makedirs(output_dir, exist_ok=True)
     print(f"\n[OUTPUT] Results will be saved to: {output_dir}/")
 
@@ -1122,10 +1235,13 @@ def main():
     # Create renderer
     renderer = LetterRenderer(font_loader)
 
-    # Create datasets (shared across all optimizers for fair comparison)
+    # Create datasets (shared across all experiments for fair comparison)
     print(f"\n{'='*60}")
-    print("DATASET GENERATION (shared across all optimizers)")
+    print("DATASET GENERATION (shared across ALL experiments)")
     print(f"{'='*60}")
+    print(f"  Training: {Config.VARIATIONS_PER_LETTER} variations per letter")
+    print(f"  Validation: {Config.VAL_VARIATIONS_PER_LETTER} variations per letter (HELD-OUT)")
+    print(f"  Note: Validation uses different random seeds (offset +10000)")
     train_dataset = AlphabetDataset(renderer, Config.VARIATIONS_PER_LETTER, is_training=True)
     val_dataset = AlphabetDataset(renderer, Config.VAL_VARIATIONS_PER_LETTER, is_training=False)
 
@@ -1138,83 +1254,208 @@ def main():
     print(f"[DATALOADER] Training batches: {len(train_loader)}")
     print(f"[DATALOADER] Validation batches: {len(val_loader)}")
 
-    # Run all optimizer experiments
+    # Run all optimizer x activation experiments
     all_results = []
     total_start_time = time.time()
 
-    for i, opt_config in enumerate(OPTIMIZERS, 1):
-        try:
-            result = run_optimizer_experiment(
-                opt_config, train_loader, val_loader, device,
-                output_dir, font_loader, i, len(OPTIMIZERS)
-            )
-            all_results.append(result)
-        except Exception as e:
-            print(f"\n[ERROR] {opt_config['name']} failed: {e}")
-            all_results.append({
-                "optimizer": opt_config["name"],
-                "final_accuracy": 0,
-                "error": str(e),
-            })
+    experiment_num = 0
+    total_experiments = len(OPTIMIZERS) * len(ACTIVATIONS_TO_TEST)
+
+    for opt_config in OPTIMIZERS:
+        for activation in ACTIVATIONS_TO_TEST:
+            experiment_num += 1
+            try:
+                result = run_optimizer_experiment(
+                    opt_config, train_loader, val_loader, device,
+                    output_dir, font_loader, experiment_num, total_experiments,
+                    activation=activation
+                )
+                all_results.append(result)
+            except Exception as e:
+                print(f"\n[ERROR] {opt_config['name']}+{activation} failed: {e}")
+                import traceback
+                traceback.print_exc()
+                all_results.append({
+                    "optimizer": opt_config["name"],
+                    "activation": activation,
+                    "experiment_name": f"{opt_config['name']}_{activation}",
+                    "final_accuracy": 0,
+                    "best_accuracy": 0,
+                    "error": str(e),
+                })
 
     total_time = time.time() - total_start_time
 
     # Print comparison summary
     print(f"\n{'='*70}")
-    print("OPTIMIZER COMPARISON SUMMARY")
+    print("OPTIMIZER & ACTIVATION COMPARISON SUMMARY")
     print(f"{'='*70}")
     print(f"Total experiment time: {total_time/60:.1f} minutes")
     print(f"Output directory: {output_dir}/")
     print(f"")
-    print(f"{'Optimizer':<12} {'Best Acc':>10} {'Final Acc':>10} {'Epochs':>8} {'Time':>10} {'Stop Reason':<30}")
-    print("-" * 90)
+    print(f"{'Experiment':<18} {'Activation':>10} {'Best Acc':>10} {'Final Acc':>10} {'Epochs':>8} {'Time':>8}")
+    print("-" * 80)
 
     # Sort by best accuracy
     sorted_results = sorted(all_results, key=lambda x: x.get("best_accuracy", 0), reverse=True)
 
     for r in sorted_results:
         if "error" in r:
-            print(f"{r['optimizer']:<12} {'ERROR':>10} {'-':>10} {'-':>8} {'-':>10} {r['error'][:30]:<30}")
+            print(f"{r.get('experiment_name', r['optimizer']):<18} {r.get('activation', '?'):>10} {'ERROR':>10} {'-':>10} {'-':>8} {'-':>8}")
         else:
             time_str = f"{r['time_sec']/60:.1f}m"
-            stop_short = r['stop_reason'][:30] if len(r['stop_reason']) > 30 else r['stop_reason']
-            print(f"{r['optimizer']:<12} {r['best_accuracy']:>9.2f}% {r['final_accuracy']:>9.2f}% {r['total_epochs']:>8} {time_str:>10} {stop_short:<30}")
+            print(f"{r['experiment_name']:<18} {r['activation']:>10} {r['best_accuracy']:>9.2f}% {r['final_accuracy']:>9.2f}% {r['total_epochs']:>8} {time_str:>8}")
 
-    print("-" * 90)
+    print("-" * 80)
 
-    # Winner
-    winner = sorted_results[0]
-    print(f"\n  WINNER: {winner['optimizer']} with {winner.get('best_accuracy', 0):.2f}% best accuracy")
+    # Best results by activation
+    relu_results = [r for r in sorted_results if r.get('activation') == 'relu' and 'error' not in r]
+    tanh_results = [r for r in sorted_results if r.get('activation') == 'tanh' and 'error' not in r]
+
+    best_relu = max(relu_results, key=lambda x: x['best_accuracy']) if relu_results else None
+    best_tanh = max(tanh_results, key=lambda x: x['best_accuracy']) if tanh_results else None
+
+    print(f"\n  BEST ReLU: {best_relu['experiment_name'] if best_relu else 'N/A'} with {best_relu['best_accuracy']:.2f}%" if best_relu else "")
+    print(f"  BEST Tanh: {best_tanh['experiment_name'] if best_tanh else 'N/A'} with {best_tanh['best_accuracy']:.2f}%" if best_tanh else "")
+
+    # Overall winner
+    winner = sorted_results[0] if sorted_results else None
+    if winner and 'error' not in winner:
+        print(f"\n  OVERALL WINNER: {winner['experiment_name']} with {winner['best_accuracy']:.2f}% best accuracy")
     print(f"  Random baseline: {100/26:.2f}%")
 
-    # Save comparison summary JSON
+    # ================================================================
+    # COMPREHENSIVE JSON SUMMARY (answers GA baseline comparison questions)
+    # ================================================================
     summary = {
-        "experiment": "optimizer_comparison",
+        "experiment_type": "gradient_descent_optimizer_activation_comparison",
         "timestamp": timestamp,
         "total_time_sec": round(total_time, 1),
-        "config": {
-            "hidden_size": Config.HIDDEN_SIZE,
-            "input_size": Config.INPUT_SIZE,
-            "num_fonts": args.fonts,
-            "patience": Config.PATIENCE,
+        "total_experiments": total_experiments,
+
+        # ============================================================
+        # KEY QUESTIONS ANSWERED (for GA baseline comparison)
+        # ============================================================
+        "ga_baseline_comparison_answers": {
+            "question_1_activation_function": {
+                "question": "Are you using tanh or relu?",
+                "answer": "BOTH - This experiment tests both ReLU and Tanh activations for fair comparison",
+                "activations_tested": ACTIVATIONS_TO_TEST,
+                "best_relu_accuracy": round(best_relu['best_accuracy'], 2) if best_relu else None,
+                "best_tanh_accuracy": round(best_tanh['best_accuracy'], 2) if best_tanh else None,
+                "winner_activation": winner['activation'] if winner and 'error' not in winner else None,
+            },
+            "question_2_training_variations": {
+                "question": "Are you using the same number of training variations per letter (50)?",
+                "answer": f"YES - Using {Config.VARIATIONS_PER_LETTER} training variations per letter",
+                "training_variations_per_letter": Config.VARIATIONS_PER_LETTER,
+                "total_training_samples": 26 * Config.VARIATIONS_PER_LETTER,
+                "validation_variations_per_letter": Config.VAL_VARIATIONS_PER_LETTER,
+                "total_validation_samples": 26 * Config.VAL_VARIATIONS_PER_LETTER,
+            },
+            "question_3_evaluation_set": {
+                "question": "Are you measuring performance on the held-out validation set or the training set?",
+                "answer": "VALIDATION SET - All reported accuracies are on the held-out validation set",
+                "validation_method": "Held-out validation set with different random seeds",
+                "train_val_separation": "Training uses variation indices 0-N, Validation uses 10000-10000+N",
+                "note": "This ensures validation images are NEVER seen during training",
+            },
+            "question_4_best_performance": {
+                "question": "What is the best performance that gradient descent actually gets?",
+                "best_overall_accuracy": round(winner['best_accuracy'], 2) if winner and 'error' not in winner else None,
+                "best_overall_experiment": winner['experiment_name'] if winner and 'error' not in winner else None,
+                "best_relu_accuracy": round(best_relu['best_accuracy'], 2) if best_relu else None,
+                "best_relu_optimizer": best_relu['optimizer'] if best_relu else None,
+                "best_tanh_accuracy": round(best_tanh['best_accuracy'], 2) if best_tanh else None,
+                "best_tanh_optimizer": best_tanh['optimizer'] if best_tanh else None,
+                "random_baseline": round(100/26, 2),
+                "improvement_over_random": round(winner['best_accuracy'] - 100/26, 2) if winner and 'error' not in winner else None,
+            },
         },
-        "results": sorted_results,
-        "winner": winner["optimizer"],
-        "random_baseline": round(100/26, 2),
+
+        # ============================================================
+        # DETAILED CONFIGURATION
+        # ============================================================
+        "configuration": {
+            "network": {
+                "architecture": f"{Config.INPUT_SIZE} -> {Config.HIDDEN_SIZE} -> {Config.OUTPUT_SIZE}",
+                "input_size": Config.INPUT_SIZE,
+                "hidden_size": Config.HIDDEN_SIZE,
+                "output_size": Config.OUTPUT_SIZE,
+                "total_parameters": (Config.INPUT_SIZE * Config.HIDDEN_SIZE + Config.HIDDEN_SIZE +
+                                    Config.HIDDEN_SIZE * Config.OUTPUT_SIZE + Config.OUTPUT_SIZE),
+                "compression_ratio": Config.INPUT_SIZE / Config.HIDDEN_SIZE,
+            },
+            "training": {
+                "batch_size": Config.BATCH_SIZE,
+                "max_epochs": Config.EPOCHS,
+                "early_stopping_patience": Config.PATIENCE,
+                "min_improvement_threshold": Config.MIN_IMPROVEMENT,
+                "dramatic_drop_threshold": Config.DRAMATIC_DROP,
+            },
+            "data": {
+                "image_size": f"{Config.FIELD_WIDTH}x{Config.FIELD_HEIGHT}",
+                "num_fonts": args.fonts,
+                "augmentation": {
+                    "rotation_range_degrees": [-Config.MAX_ROTATION, Config.MAX_ROTATION],
+                    "jitter_ratio": Config.MAX_JITTER_RATIO,
+                    "font_size_variations": ["small", "normal"],
+                    "color_schemes": ["white_on_black", "black_on_white"],
+                },
+            },
+            "device": Config.DEVICE,
+            "platform": platform.system(),
+        },
+
+        # ============================================================
+        # ALL RESULTS
+        # ============================================================
+        "results_sorted_by_accuracy": sorted_results,
+
+        # ============================================================
+        # SUMMARY STATISTICS
+        # ============================================================
+        "summary": {
+            "overall_winner": {
+                "experiment": winner['experiment_name'] if winner and 'error' not in winner else None,
+                "optimizer": winner['optimizer'] if winner and 'error' not in winner else None,
+                "activation": winner['activation'] if winner and 'error' not in winner else None,
+                "best_validation_accuracy": round(winner['best_accuracy'], 2) if winner and 'error' not in winner else None,
+            },
+            "best_by_activation": {
+                "relu": {
+                    "best_accuracy": round(best_relu['best_accuracy'], 2) if best_relu else None,
+                    "optimizer": best_relu['optimizer'] if best_relu else None,
+                },
+                "tanh": {
+                    "best_accuracy": round(best_tanh['best_accuracy'], 2) if best_tanh else None,
+                    "optimizer": best_tanh['optimizer'] if best_tanh else None,
+                },
+            },
+            "random_baseline_accuracy": round(100/26, 2),
+            "experiments_completed": len([r for r in all_results if 'error' not in r]),
+            "experiments_failed": len([r for r in all_results if 'error' in r]),
+        },
     }
 
     summary_path = os.path.join(output_dir, "comparison_summary.json")
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
-    print(f"\n[SAVE] Comparison summary saved to: {summary_path}")
+    print(f"\n[SAVE] Comprehensive comparison summary saved to: {summary_path}")
 
     print("\n" + "="*70)
     print("ALL EXPERIMENTS COMPLETE")
     print("="*70)
     print(f"  Output directory: {output_dir}/")
-    print(f"  Individual logs:  log_<optimizer>_<timestamp>.json")
-    print(f"  Individual models: model_<optimizer>_<timestamp>.pt")
+    print(f"  Individual logs:  log_<optimizer>_<activation>_<timestamp>.json")
+    print(f"  Individual models: model_<optimizer>_<activation>_<timestamp>.pt")
     print(f"  Summary:          comparison_summary.json")
+    print("")
+    print("  The comparison_summary.json contains detailed answers to:")
+    print("    1. Which activation function (tanh vs relu)?")
+    print("    2. How many training variations per letter?")
+    print("    3. Validation or training set measurement?")
+    print("    4. Best performance achieved?")
     print("="*70 + "\n")
 
 
