@@ -99,4 +99,5 @@ Show me.
 
 MIT
 
-Do whatever you want with it. Prove me wrong. I'll wait.
+Do whatever you want with it. Add a VAE, CNN, transformer, whatever you want. It can't do what mine can on the same playing field.
+Hop off your backprop dildos and realize there's a new player in the game.
