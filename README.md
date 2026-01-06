@@ -1,16 +1,15 @@
-[GRADIENT_README.md](https://github.com/user-attachments/files/24459616/GRADIENT_README.md)
 # Gradient Descent Alphabet Recognition
 
 A comprehensive test of gradient-based optimization on a simple letter classification task.
 
 ## The Challenge
 
-Classify letters A-Z from 100x100 pixel images using a small neural network with only 1 font! While my models are continuing to train past 50% now with the SAME configuration, wow thats crazy.
+Classify letters A-Z from 100x100 pixel images using a small neural network.
 
 ```
 Architecture: 10,000 inputs → 32 hidden → 26 outputs
 Parameters: ~321,000
-Activation: tanh
+Activations tested: ReLU and Tanh
 ```
 
 Augmentation applied during training:
@@ -19,7 +18,16 @@ Augmentation applied during training:
 - Font size variation: 12pt and 64pt
 - Color inversion: white-on-black and black-on-white
 
+Training/Validation split:
+- 50 variations per letter for training (1,300 total)
+- 10 variations per letter for validation (260 total)
+- Different random seeds ensure validation images are never seen during training
+
 ## Results
+
+Tested 6 optimizers × 2 activation functions = 12 experiments.
+
+### ReLU Activation
 
 | Optimizer | Best Accuracy | Random Baseline | Improvement |
 |-----------|---------------|-----------------|-------------|
@@ -30,23 +38,37 @@ Augmentation applied during training:
 | RMSprop | 5.00% | 3.85% | +1.15% |
 | SGD | 4.62% | 3.85% | +0.77% |
 
-The best optimizer (Adam) achieved 6.54% accuracy.
+### Tanh Activation
 
-Random guessing would achieve 3.85%.
+| Optimizer | Best Accuracy | Random Baseline | Improvement |
+|-----------|---------------|-----------------|-------------|
+| Adagrad | 6.15% | 3.85% | +2.30% |
+| Adam | 5.38% | 3.85% | +1.53% |
+| AdamW | 5.38% | 3.85% | +1.53% |
+| RMSprop | 5.38% | 3.85% | +1.53% |
+| Adadelta | 5.38% | 3.85% | +1.53% |
+| SGD | 5.00% | 3.85% | +1.15% |
+
+**Best overall: Adam + ReLU at 6.54%**
+
+**Best with tanh (matching evolutionary model): Adagrad at 6.15%**
 
 Congratulations to Adam for being 2.69% better than a coin flip.
 
 ## For Comparison
 
-An evolutionary approach using the exact same architecture achieves 78%+ accuracy and continues to improve.
+An evolutionary approach using the exact same architecture (with tanh) achieves 78%+ accuracy and continues to improve.
 
 Same network. Same task. Same augmentation. Same everything except the training method.
+
+The best gradient result with tanh: 6.15%
+The evolutionary result with tanh: 78%+
 
 And that's on a single font.
 
 I have another evolutionary model training on 5 different fonts simultaneously. It's currently in the 40%+ range and climbing. With 64 hidden neurons instead of 32, learning font-invariant representations from scratch.
 
-Meanwhile, the best gradient optimizer couldn't break 7% on one font.
+Meanwhile, the best gradient optimizer couldn't break 7% on one font with either activation function.
 
 But I'm sure gradients can do this easily. Everyone keeps telling me so.
 
@@ -100,4 +122,5 @@ Show me.
 MIT
 
 Do whatever you want with it. Add a VAE, CNN, transformer, whatever you want. It can't do what mine can on the same playing field.
+
 Hop off your backprop dildos and realize there's a new player in the game.
