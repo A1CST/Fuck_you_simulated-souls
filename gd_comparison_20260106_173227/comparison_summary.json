@@ -1,0 +1,274 @@
+{
+  "experiment_type": "gradient_descent_optimizer_activation_comparison",
+  "timestamp": "20260106_173227",
+  "total_time_sec": 285.0,
+  "total_experiments": 12,
+  "ga_baseline_comparison_answers": {
+    "question_1_activation_function": {
+      "question": "Are you using tanh or relu?",
+      "answer": "BOTH - This experiment tests both ReLU and Tanh activations for fair comparison",
+      "activations_tested": [
+        "relu",
+        "tanh"
+      ],
+      "best_relu_accuracy": 6.54,
+      "best_tanh_accuracy": 6.15,
+      "winner_activation": "relu"
+    },
+    "question_2_training_variations": {
+      "question": "Are you using the same number of training variations per letter (50)?",
+      "answer": "YES - Using 50 training variations per letter",
+      "training_variations_per_letter": 50,
+      "total_training_samples": 1300,
+      "validation_variations_per_letter": 10,
+      "total_validation_samples": 260
+    },
+    "question_3_evaluation_set": {
+      "question": "Are you measuring performance on the held-out validation set or the training set?",
+      "answer": "VALIDATION SET - All reported accuracies are on the held-out validation set",
+      "validation_method": "Held-out validation set with different random seeds",
+      "train_val_separation": "Training uses variation indices 0-N, Validation uses 10000-10000+N",
+      "note": "This ensures validation images are NEVER seen during training"
+    },
+    "question_4_best_performance": {
+      "question": "What is the best performance that gradient descent actually gets?",
+      "best_overall_accuracy": 6.54,
+      "best_overall_experiment": "Adam_relu",
+      "best_relu_accuracy": 6.54,
+      "best_relu_optimizer": "Adam",
+      "best_tanh_accuracy": 6.15,
+      "best_tanh_optimizer": "Adagrad",
+      "random_baseline": 3.85,
+      "improvement_over_random": 2.69
+    }
+  },
+  "configuration": {
+    "network": {
+      "architecture": "10000 -> 32 -> 26",
+      "input_size": 10000,
+      "hidden_size": 32,
+      "output_size": 26,
+      "total_parameters": 320890,
+      "compression_ratio": 312.5
+    },
+    "training": {
+      "batch_size": 64,
+      "max_epochs": 10000,
+      "early_stopping_patience": 300,
+      "min_improvement_threshold": 0.1,
+      "dramatic_drop_threshold": 5.0
+    },
+    "data": {
+      "image_size": "100x100",
+      "num_fonts": 1,
+      "augmentation": {
+        "rotation_range_degrees": [
+          -25,
+          25
+        ],
+        "jitter_ratio": 0.2,
+        "font_size_variations": [
+          "small",
+          "normal"
+        ],
+        "color_schemes": [
+          "white_on_black",
+          "black_on_white"
+        ]
+      }
+    },
+    "device": "cpu",
+    "platform": "Windows"
+  },
+  "results_sorted_by_accuracy": [
+    {
+      "optimizer": "Adam",
+      "activation": "relu",
+      "experiment_name": "Adam_relu",
+      "final_accuracy": 5.769230769230769,
+      "final_loss": 7.043693733215332,
+      "best_accuracy": 6.54,
+      "best_epoch": 20,
+      "total_epochs": 320,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 6.54% @ epoch 20)",
+      "time_sec": 24.4,
+      "json_path": "gd_comparison_20260106_173227\\log_Adam_relu_20260106_173347.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adam_relu_20260106_173347.pt"
+    },
+    {
+      "optimizer": "Adagrad",
+      "activation": "tanh",
+      "experiment_name": "Adagrad_tanh",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 3.647837631519024,
+      "best_accuracy": 6.15,
+      "best_epoch": 47,
+      "total_epochs": 347,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 6.15% @ epoch 47)",
+      "time_sec": 22.4,
+      "json_path": "gd_comparison_20260106_173227\\log_Adagrad_tanh_20260106_173631.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adagrad_tanh_20260106_173631.pt"
+    },
+    {
+      "optimizer": "AdamW",
+      "activation": "relu",
+      "experiment_name": "AdamW_relu",
+      "final_accuracy": 5.769230769230769,
+      "final_loss": 7.035110928462102,
+      "best_accuracy": 5.77,
+      "best_epoch": 6,
+      "total_epochs": 306,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 6)",
+      "time_sec": 27.1,
+      "json_path": "gd_comparison_20260106_173227\\log_AdamW_relu_20260106_173438.json",
+      "model_path": "gd_comparison_20260106_173227\\model_AdamW_relu_20260106_173438.pt"
+    },
+    {
+      "optimizer": "Adagrad",
+      "activation": "relu",
+      "experiment_name": "Adagrad_relu",
+      "final_accuracy": 1.9230769230769231,
+      "final_loss": 4.679898775540865,
+      "best_accuracy": 5.77,
+      "best_epoch": 8,
+      "total_epochs": 308,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 8)",
+      "time_sec": 20.1,
+      "json_path": "gd_comparison_20260106_173227\\log_Adagrad_relu_20260106_173608.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adagrad_relu_20260106_173608.pt"
+    },
+    {
+      "optimizer": "Adadelta",
+      "activation": "relu",
+      "experiment_name": "Adadelta_relu",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 6.64727432177617,
+      "best_accuracy": 5.77,
+      "best_epoch": 1,
+      "total_epochs": 301,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.77% @ epoch 1)",
+      "time_sec": 23.7,
+      "json_path": "gd_comparison_20260106_173227\\log_Adadelta_relu_20260106_173654.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adadelta_relu_20260106_173654.pt"
+    },
+    {
+      "optimizer": "Adam",
+      "activation": "tanh",
+      "experiment_name": "Adam_tanh",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 3.9902842961824856,
+      "best_accuracy": 5.38,
+      "best_epoch": 14,
+      "total_epochs": 314,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.38% @ epoch 14)",
+      "time_sec": 23.6,
+      "json_path": "gd_comparison_20260106_173227\\log_Adam_tanh_20260106_173411.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adam_tanh_20260106_173411.pt"
+    },
+    {
+      "optimizer": "AdamW",
+      "activation": "tanh",
+      "experiment_name": "AdamW_tanh",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 3.9561919835897594,
+      "best_accuracy": 5.38,
+      "best_epoch": 15,
+      "total_epochs": 314,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.38% @ epoch 14)",
+      "time_sec": 28.7,
+      "json_path": "gd_comparison_20260106_173227\\log_AdamW_tanh_20260106_173507.json",
+      "model_path": "gd_comparison_20260106_173227\\model_AdamW_tanh_20260106_173507.pt"
+    },
+    {
+      "optimizer": "RMSprop",
+      "activation": "tanh",
+      "experiment_name": "RMSprop_tanh",
+      "final_accuracy": 4.230769230769231,
+      "final_loss": 4.141816073197585,
+      "best_accuracy": 5.38,
+      "best_epoch": 96,
+      "total_epochs": 311,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.38% @ epoch 11)",
+      "time_sec": 20.7,
+      "json_path": "gd_comparison_20260106_173227\\log_RMSprop_tanh_20260106_173548.json",
+      "model_path": "gd_comparison_20260106_173227\\model_RMSprop_tanh_20260106_173548.pt"
+    },
+    {
+      "optimizer": "Adadelta",
+      "activation": "tanh",
+      "experiment_name": "Adadelta_tanh",
+      "final_accuracy": 4.615384615384616,
+      "final_loss": 4.19890696819012,
+      "best_accuracy": 5.38,
+      "best_epoch": 4,
+      "total_epochs": 304,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.38% @ epoch 4)",
+      "time_sec": 22.6,
+      "json_path": "gd_comparison_20260106_173227\\log_Adadelta_tanh_20260106_173717.json",
+      "model_path": "gd_comparison_20260106_173227\\model_Adadelta_tanh_20260106_173717.pt"
+    },
+    {
+      "optimizer": "SGD",
+      "activation": "tanh",
+      "experiment_name": "SGD_tanh",
+      "final_accuracy": 4.615384615384616,
+      "final_loss": 4.196149807709914,
+      "best_accuracy": 5.0,
+      "best_epoch": 8,
+      "total_epochs": 308,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.00% @ epoch 8)",
+      "time_sec": 19.3,
+      "json_path": "gd_comparison_20260106_173227\\log_SGD_tanh_20260106_173323.json",
+      "model_path": "gd_comparison_20260106_173227\\model_SGD_tanh_20260106_173323.pt"
+    },
+    {
+      "optimizer": "RMSprop",
+      "activation": "relu",
+      "experiment_name": "RMSprop_relu",
+      "final_accuracy": 3.8461538461538463,
+      "final_loss": 15.319338593116173,
+      "best_accuracy": 5.0,
+      "best_epoch": 4,
+      "total_epochs": 304,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 5.00% @ epoch 4)",
+      "time_sec": 20.7,
+      "json_path": "gd_comparison_20260106_173227\\log_RMSprop_relu_20260106_173527.json",
+      "model_path": "gd_comparison_20260106_173227\\model_RMSprop_relu_20260106_173527.pt"
+    },
+    {
+      "optimizer": "SGD",
+      "activation": "relu",
+      "experiment_name": "SGD_relu",
+      "final_accuracy": 4.615384615384616,
+      "final_loss": 5.59076483799861,
+      "best_accuracy": 4.62,
+      "best_epoch": 152,
+      "total_epochs": 452,
+      "stop_reason": "PLATEAU: No improvement for 300 epochs (best: 4.62% @ epoch 152)",
+      "time_sec": 30.0,
+      "json_path": "gd_comparison_20260106_173227\\log_SGD_relu_20260106_173303.json",
+      "model_path": "gd_comparison_20260106_173227\\model_SGD_relu_20260106_173303.pt"
+    }
+  ],
+  "summary": {
+    "overall_winner": {
+      "experiment": "Adam_relu",
+      "optimizer": "Adam",
+      "activation": "relu",
+      "best_validation_accuracy": 6.54
+    },
+    "best_by_activation": {
+      "relu": {
+        "best_accuracy": 6.54,
+        "optimizer": "Adam"
+      },
+      "tanh": {
+        "best_accuracy": 6.15,
+        "optimizer": "Adagrad"
+      }
+    },
+    "random_baseline_accuracy": 3.85,
+    "experiments_completed": 12,
+    "experiments_failed": 0
+  }
+}
